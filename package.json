@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/the-reunited-pieces/Apollo",
   "dependencies": {
-    "@the-reunited-pieces/dexcom-api": "^1.0.4",
+    "@the-reunited-pieces/dexcom-api": "^1.1.1",
     "discord.js": "^14.28.1"
   },
   "devDependencies": {
