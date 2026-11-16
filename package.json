@@ -1,29 +1,29 @@
 {
-  "name": "apollo",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/the-reunited-pieces/Apollo.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
-  "bugs": {
-    "url": "https://github.com/the-reunited-pieces/Apollo/issues"
-  },
-  "homepage": "https://github.com/the-reunited-pieces/Apollo",
-  "dependencies": {
-    "@the-reunited-pieces/dexcom-api": "^1.1.1",
-    "discord.js": "^14.28.1"
-  },
-  "devDependencies": {
-    "@types/node": "^26.6.6",
-    "typescript": "^7.0.2"
-  }
+    "name": "apollo",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/the-reunited-pieces/Apollo.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "module",
+    "bugs": {
+        "url": "https://github.com/the-reunited-pieces/Apollo/issues"
+    },
+    "homepage": "https://github.com/the-reunited-pieces/Apollo",
+    "dependencies": {
+        "@the-reunited-pieces/dexcom-api": "^1.1.1",
+        "discord.js": "^14.28.1"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.6",
+        "typescript": "^7.0.2"
+    }
 }
