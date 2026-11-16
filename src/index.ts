@@ -1,7 +1,7 @@
-import { trpc } from "@the-reunited-pieces/dexcom-api";
 import { Client, Events } from "discord.js";
 import { commands } from "./commands.ts";
 import { handleDump } from "./commands/dump.ts";
+import { trpc } from "./trpc.ts";
 
 const trendArrows: Record<string, string> = {
     doubleUp: "⇈",
@@ -18,9 +18,7 @@ const trendArrows: Record<string, string> = {
 
 const client = new Client({ intents: 0 });
 
-const promise = new Promise<Client<true>>((res) =>
-    client.on(Events.ClientReady, res),
-);
+const promise = new Promise<Client<true>>((res) => client.on(Events.ClientReady, res));
 await client.login(process.env.DISCORD_TOKEN);
 const bot = await promise;
 
@@ -38,9 +36,7 @@ await bot.application.commands.set(commands);
 let lastSync: number | null = null;
 
 async function sync() {
-    const channel = await bot.channels
-        .fetch(process.env.STATDOCK_ID!)
-        .catch(() => null);
+    const channel = await bot.channels.fetch(process.env.STATDOCK_ID!).catch(() => null);
     if (channel === null || channel.isDMBased()) return;
 
     const { start, end } = lastSync
@@ -51,9 +47,7 @@ async function sync() {
               .then((value) =>
                   value
                       ? {
-                            start: new Date(
-                                value.start.systemTime + "Z",
-                            ).getTime(),
+                            start: new Date(value.start.systemTime + "Z").getTime(),
                             end: new Date(value.end.systemTime + "Z").getTime(),
                         }
                       : null,
@@ -69,11 +63,7 @@ async function sync() {
     });
     const record = value?.records.at(-1);
 
-    channel.setName(
-        error
-            ? `Error: ${error}`
-            : `${Math.round(record!.valueInMmoll! * 10) / 10} ${trendArrows[record!.trend!]}`,
-    );
+    channel.setName(error ? `Error: ${error}` : `${Math.round(record!.valueInMmoll! * 10) / 10} ${trendArrows[record!.trend!]}`);
 }
 
 sync();

@@ -1,5 +1,5 @@
-import { trpc } from "@the-reunited-pieces/dexcom-api";
 import { type ChatInputCommandInteraction } from "discord.js";
+import { trpc } from "../trpc.ts";
 
 export async function handleDump(cmd: ChatInputCommandInteraction) {
     await cmd.deferReply();
@@ -14,9 +14,7 @@ export async function handleDump(cmd: ChatInputCommandInteraction) {
             .then((value) =>
                 value
                     ? {
-                          start: new Date(
-                              value.start.systemTime + "Z",
-                          ).getTime(),
+                          start: new Date(value.start.systemTime + "Z").getTime(),
                           end: new Date(value.end.systemTime + "Z").getTime(),
                       }
                     : null,
