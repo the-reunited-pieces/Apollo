@@ -114,9 +114,7 @@ async function loop() {
             if (!egvsError && !record) return;
 
             channel.setName(
-                egvsError
-                    ? `Error: ${egvsError}`
-                    : `${Math.round(record!.valueInMmoll! * 10) / 10} ${trendArrows[record!.trend!]} ${sandbox ? "(sandbox data)" : ""}`,
+                egvsError ? `Error: ${egvsError}` : `${record!.valueInMmoll?.toFixed(1)} ${trendArrows[record!.trend!]} ${sandbox ? "(sandbox data)" : ""}`,
             );
         })(),
         (async () => {
