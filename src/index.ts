@@ -22,6 +22,12 @@ const trendArrows: Record<string, string> = {
     rateOutOfRange: "‼",
 };
 
+const errorMap: Record<string, string> = {
+    auth: "there was an authentication-related issue likely requiring running `node login.ts` again (this may be caused by access token expiry due to repeated failed refreshes, a 401/403 from the Dexcom server, etc.).",
+    dexcom: "fetching from the requested API endpoint resulted in a non-OK status from Dexcom that does not indicate an authentication failure.",
+    parse: "the requested API endpoint returned an OK status, but the data could not be parsed as JSON or failed zod validation (check the `dexcom-api` logs for more details).",
+};
+
 const client = new Client({ intents: 0 });
 
 const promise = new Promise<Client<true>>((res) => client.on(Events.ClientReady, res));
@@ -38,10 +44,10 @@ process.on("uncaughtException", (error) => {
     sendAlert(`A fatal exception occurred! Please check the console for more details: ${error}`, "advance");
 });
 
-function sendAlert(message: string, alert: "advance" | "ping" | "silent") {
+async function sendAlert(message: string, alert: "advance" | "ping" | "silent") {
     if (!alerts?.isSendable()) return; // Not really possible...
     console.log(`[APOLLO] Sending alert (alert = ${alert}): ${message}`);
-    alerts
+    await alerts
         .send(
             `${alert === "silent" ? "" : `<@&${alert === "advance" ? process.env.DEXCOM_ADVANCE_ALERTS_ROLE_ID : process.env.DEXCOM_ALERTS_ROLE_ID}> `}${message}`,
         )
@@ -58,6 +64,7 @@ bot.on(Events.InteractionCreate, async (interaction) => {
 
 await bot.application.commands.set(commands);
 let lastSync: number | null = null;
+let eventThreshold: number = Date.now();
 let pingCooldown = new Set<string>();
 let currentlyOutOfRange = false;
 
@@ -90,34 +97,33 @@ async function loop() {
     const options = { start: Math.max(start, end - 24 * 60 * 60 * 1000), end };
     console.log(`[APOLLO] Syncing with data range ${new Date(options.start).toISOString()} to ${new Date(options.end).toISOString()}.`);
 
-    const { error, value, sandbox } = await trpc.egvs.query(options);
-    console.log(`[APOLLO] Fetched data (error = ${error}), processing data into updates/alerts now.`);
+    const { error: egvsError, value: egvs, sandbox } = await trpc.egvs.query(options);
+    console.log(`[APOLLO] Fetched EGVS (error = ${egvsError}), processing data into updates/alerts now.`);
+
+    const { error: eventsError, value: events } = await trpc.events.query(options);
+    console.log(`[APOLLO] Fetched events (error = ${eventsError}), processing data into updates/alerts now.`);
+
+    lastSync = Date.now();
 
     await Promise.all([
         (async () => {
             const channel = await bot.channels.fetch(process.env.STATDOCK_ID!).catch(() => null);
             if (!channel || channel.isDMBased()) return;
 
-            const record = value?.records.at(-1)!;
+            const record = egvs?.records.at(-1);
+            if (!egvsError && !record) return;
 
             channel.setName(
-                error ? `Error: ${error}` : `${Math.round(record.valueInMmoll! * 10) / 10} ${trendArrows[record.trend!]} ${sandbox ? "(sandbox data)" : ""}`,
+                egvsError
+                    ? `Error: ${egvsError}`
+                    : `${Math.round(record!.valueInMmoll! * 10) / 10} ${trendArrows[record!.trend!]} ${sandbox ? "(sandbox data)" : ""}`,
             );
         })(),
         (async () => {
-            if (error)
-                return sendAlert(
-                    `Fetching the latest estimated glucose value (EGV) records failed: ${
-                        {
-                            auth: "there was an authentication-related issue likely requiring running `node login.ts` again (this may be caused by access token expiry due to repeated failed refreshes, a 401/403 from the Dexcom server, etc.).",
-                            dexcom: "fetching from the requested API endpoint resulted in a non-OK status from Dexcom that does not indicate an authentication failure.",
-                            parse: "the requested API endpoint returned an OK status, but the data could not be parsed as JSON or failed zod validation (check the `dexcom-api` logs for more details).",
-                        }[error] ?? error
-                    }`,
-                    "advance",
-                );
+            if (egvsError) return sendAlert(`Fetching the latest estimated glucose value (EGV) records failed: ${errorMap[egvsError] ?? egvsError}`, "advance");
 
-            const record = value!.records.at(-1)!;
+            const record = egvs!.records.at(-1);
+            if (!record) return;
             if (record.valueInMmoll === undefined) return sendAlert("The latest record did not contain a glucose value!", "advance");
 
             const glucose = record.valueInMmoll;
@@ -180,6 +186,49 @@ async function loop() {
                     "silent",
                 );
             }
+        })(),
+        (async () => {
+            if (eventsError) return sendAlert(`Fetching the latest event records failed: ${errorMap[eventsError] ?? eventsError}`, "advance");
+
+            const filtered = events!.records
+                .map((record) => ({
+                    time: new Date(record.systemTime),
+                    id: record.recordId,
+                    type: record.eventType,
+                    subtype: record.eventSubType,
+                    status: record.eventStatus,
+                    value: record.value,
+                    unit: record.unit,
+                }))
+                .filter((record) => record.time.getTime() > eventThreshold)
+                .toSorted((x, y) => x.time.getTime() - y.time.getTime());
+
+            for (const { time, id, type, subtype, status, value, unit } of filtered) {
+                const ts = Math.floor(time.getTime() / 1000);
+                await sendAlert(
+                    `<t:${ts}:f> (<t:${ts}:R>) (ID = \`${id}\`): An event was ${status}: ${
+                        type === "bloodGlucose"
+                            ? `Blood glucose measured via finger prick as ${(+value / 18).toFixed(1)} mmol/L.`
+                            : type === "carbs"
+                              ? `${(+value).toFixed(1)} gram${+value === 1 ? "" : "s"} of carbs consumed.`
+                              : type === "exercise"
+                                ? `${+value} minute${+value === 1 ? "" : "s"} of ${subtype} exercise.`
+                                : type === "health"
+                                  ? `Health record added: ${subtype} — ${value}.`
+                                  : type === "insulin"
+                                    ? `${+value} unit${+value === 1 ? "" : "s"} of ${
+                                          {
+                                              fastActing: "fast-acting",
+                                              longActing: "long-acting",
+                                          }[subtype ?? ""] ?? subtype
+                                      } insulin taken.`
+                                    : `[Unknown event! type/subtype = ${type}/${subtype}, value = ${value}, unit = ${unit}]`
+                    }`,
+                    "silent",
+                );
+            }
+
+            eventThreshold = Date.now();
         })(),
     ]);
 }
