@@ -31,6 +31,7 @@ export async function handleDump(cmd: ChatInputCommandInteraction) {
     }
 
     await cmd.followUp({
+        content: (data as any).sandbox ? "# Data below is sandbox (not real) data" : "",
         files: [
             {
                 attachment: Buffer.from(JSON.stringify(data, null, 4)),

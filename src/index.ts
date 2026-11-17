@@ -1,4 +1,5 @@
 import { Client, Events } from "discord.js";
+import "dotenv/config.js";
 import { commands } from "./commands.ts";
 import { handleDump } from "./commands/dump.ts";
 import { trpc } from "./trpc.ts";
@@ -57,13 +58,15 @@ async function sync() {
               end: Date.now() + 24 * 60 * 60 * 1000,
           });
 
-    const { error, value } = await trpc.egvs.query({
+    const { error, value, sandbox } = await trpc.egvs.query({
         start: Math.max(start, end - 30 * 60 * 60 * 1000),
         end,
     });
     const record = value?.records.at(-1);
 
-    channel.setName(error ? `Error: ${error}` : `${Math.round(record!.valueInMmoll! * 10) / 10} ${trendArrows[record!.trend!]}`);
+    channel.setName(
+        error ? `Error: ${error}` : `${Math.round(record!.valueInMmoll! * 10) / 10} ${trendArrows[record!.trend!]} ${sandbox ? "(sandbox data)" : ""}`,
+    );
 }
 
 sync();
