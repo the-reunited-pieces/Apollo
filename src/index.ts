@@ -1,5 +1,6 @@
 import { Client, Events } from "discord.js";
 import "dotenv/config.js";
+import moment from "moment-timezone";
 import assert from "node:assert";
 import { commands } from "./commands.ts";
 import { handleDump } from "./commands/dump.ts";
@@ -114,7 +115,9 @@ async function loop() {
             if (!egvsError && !record) return;
 
             channel.setName(
-                egvsError ? `Error: ${egvsError}` : `${record!.valueInMmoll?.toFixed(1)} ${trendArrows[record!.trend!]} ${sandbox ? "(sandbox data)" : ""}`,
+                egvsError
+                    ? `Error: ${egvsError}`
+                    : `${record!.valueInMmoll?.toFixed(1)} ${trendArrows[record!.trend!]} [${moment(record!.systemTime).tz(process.env.TIMEZONE!).format("DD MMM HH:mm z")}] ${sandbox ? "(sandbox data)" : ""}`,
             );
         })(),
         (async () => {

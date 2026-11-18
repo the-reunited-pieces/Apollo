@@ -21,7 +21,8 @@
     "dependencies": {
         "@the-reunited-pieces/dexcom-api": "^1.2.4",
         "discord.js": "^14.28.1",
-        "dotenv": "^18.0.10"
+        "dotenv": "^18.0.10",
+        "moment-timezone": "^0.6.6"
     },
     "devDependencies": {
         "@types/node": "^26.6.6",
