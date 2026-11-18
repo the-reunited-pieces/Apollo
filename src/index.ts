@@ -110,7 +110,7 @@ async function loop() {
             const channel = await bot.channels.fetch(process.env.STATDOCK_ID!).catch(() => null);
             if (!channel || channel.isDMBased()) return;
 
-            const record = egvs?.records.at(-1);
+            const record = egvs?.records[0];
             if (!egvsError && !record) return;
 
             channel.setName(
@@ -120,7 +120,7 @@ async function loop() {
         (async () => {
             if (egvsError) return sendAlert(`Fetching the latest estimated glucose value (EGV) records failed: ${errorMap[egvsError] ?? egvsError}`, "advance");
 
-            const record = egvs!.records.at(-1);
+            const record = egvs!.records[0];
             if (!record) return;
             if (record.valueInMmoll === undefined) return sendAlert("The latest record did not contain a glucose value!", "advance");
 
