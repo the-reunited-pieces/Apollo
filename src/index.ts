@@ -183,6 +183,10 @@ async function loop() {
                     `Glucose is back to within range (4.0 < **${glucose.toFixed(1)}** < 14.0 mmol/L) and not projected to be out of range within 30 minutes!`,
                     "silent",
                 );
+            } else {
+                console.log(
+                    `[APOLLO] Nothing to alert. EGV is ${glucose.toFixed(1)} mmol/L and 30-minute projection is ${(glucose + rate * 30).toFixed(1)} mmol/L based on the rate of ${rate.toFixed(2)} mmol/L/min.`,
+                );
             }
         })(),
         (async () => {
