@@ -1,5 +1,5 @@
 import { type ChatInputCommandInteraction } from "discord.js";
-import { trpc } from "../trpc.ts";
+import { trpc } from "../lib/trpc.ts";
 
 export async function handleDump(cmd: ChatInputCommandInteraction) {
     await cmd.deferReply();
