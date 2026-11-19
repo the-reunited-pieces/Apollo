@@ -117,7 +117,7 @@ async function loop() {
             channel.setName(
                 egvsError
                     ? `Error: ${egvsError}`
-                    : `${record!.valueInMmoll?.toFixed(1)} ${trendArrows[record!.trend!]} [${moment(record!.systemTime).tz(process.env.TIMEZONE!).format("DD MMM HH:mm z")}] ${sandbox ? "(sandbox data)" : ""}`,
+                    : `${record!.valueInMmoll?.toFixed(1)} ${trendArrows[record!.trend!]} [${moment(record!.systemTime).tz(process.env.TIMEZONE!).format("HH:mm")}] ${sandbox ? "(sandbox data)" : ""}`,
             );
         })(),
         (async () => {
