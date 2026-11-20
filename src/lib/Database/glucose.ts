@@ -1,13 +1,10 @@
 import { getMongoCollection } from "./driver.ts";
-import { type glucose } from "../types.ts";
+import type { trpc } from "../trpc.ts";
 
-const collection = getMongoCollection<glucose>("glucose");
+type EGVRecord = Extract<Awaited<ReturnType<typeof trpc.egvs.query>>, { error: null }>["value"]["records"][number];
 
-export async function setGlucose(data: glucose) {
-    await collection.updateOne({ time: data.time }, { $set: data }, { upsert: true });
-}
+const collection = getMongoCollection<EGVRecord>("glucose");
 
-export async function readGlucose(time: Date) {
-    const doc = await collection.findOne({ time: time });
-    return doc;
+export async function insertGlucoseRecords(data: EGVRecord[]) {
+    await collection.bulkWrite(data.map((record) => ({ updateOne: { filter: { recordId: record.recordId }, update: { $set: record }, upsert: true } })));
 }

@@ -5,7 +5,7 @@ import assert from "node:assert";
 import { commands } from "./commands.ts";
 import { handleDump } from "./commands/dump.ts";
 import { trpc } from "./lib/trpc.ts";
-import { setGlucose } from "./lib/Database/glucose.ts";
+import { insertGlucoseRecords } from "./lib/Database/glucose.ts";
 
 assert(process.env.ALERT_CHANNEL_ID, "Set ALERT_CHANNEL_ID in .env!");
 assert(process.env.DEXCOM_ADVANCE_ALERTS_ROLE_ID, "Set DEXCOM_ADVANCE_ALERTS_ROLE_ID in .env!");
@@ -122,10 +122,7 @@ async function loop() {
             );
         })(),
         (async () => {
-            const record = egvs?.records[0];
-            if (!record) return;
-
-            await setGlucose({ time: new Date(record.displayTime), value: record.valueInMmoll, trend: record.trend, rate: record.rateInMmollmin });
+            if (egvs?.records.length) await insertGlucoseRecords(egvs?.records);
         })(),
         (async () => {
             if (egvsError) return sendAlert(`Fetching the latest estimated glucose value (EGV) records failed: ${errorMap[egvsError] ?? egvsError}`, "advance");
